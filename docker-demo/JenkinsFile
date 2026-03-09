@@ -1,0 +1,28 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                echo "Cloning repository..."
+                git 'https://github.com/SuhasK97/Demo_Docker.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "Building Docker Image..."
+                sh 'docker build -t demo_docker .'
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                echo "Running Docker Container..."
+                sh 'docker run -d --name demo_container demo_docker'
+            }
+        }
+
+    }
+}
