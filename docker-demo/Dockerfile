@@ -1,19 +1,20 @@
-# Use the official PHP image with Apache pre-installed
-FROM php:8.2-apache
+# 1. Use a 'slim' image to reduce security vulnerabilities and image size
+FROM node:18-slim
 
-# Metadata to identify the container owner
-LABEL maintainer="suhas1997"
+# 2. Set the working directory
+WORKDIR /app
 
-# Copy your PHP file to the default Apache document root
-# Note: Ensure index.php is in the same folder as this Dockerfile
-COPY index.php /var/www/html/index.php
+# 3. Copy both package files to ensure 'npm install' uses the exact versions
+COPY package*.json ./
 
-# Set correct permissions so Apache can read the file
-RUN chown -R www-data:www-data /var/www/html
+# 4. Use 'npm ci' for faster, more reliable installs in automated environments
+RUN npm ci --only=production
 
-# Inform Docker that the container listens on port 80
-EXPOSE 80
+# 5. Copy the rest of the application code
+COPY . .
 
-# Apache starts automatically in this base image, 
-# so no CMD is strictly required, but this is the default:
-CMD ["apache2-foreground"]
+# 6. Inform Docker that the container listens on port 3000
+EXPOSE 3000
+
+# 7. Start the application
+CMD ["npm", "start"]
