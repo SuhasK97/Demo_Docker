@@ -2,40 +2,41 @@ pipeline {
     agent any
 
     environment {
-        // Updated name to reflect the Nginx app
-        IMAGE_NAME = "suhas1997/nginx_docker_app:latest"
+        // Updated name to reflect the PHP app
+        IMAGE_NAME = "suhas1997/php_docker_app:latest"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
+                // Ensure this points to your repository containing index.php and Dockerfile
                 git branch: 'main', url: 'https://github.com/SuhasK97/Demo_Docker.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build PHP Image') {
             steps {
-                // Adjust 'docker-demo' if your files are in a different subfolder
+                // If your files are in a subfolder, keep dir(). If in root, remove it.
                 dir('docker-demo') {
                     sh "docker build -t ${IMAGE_NAME} ."
                 }
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Run PHP Container') {
             steps {
                 sh '''
-                # 1. Stop and remove the container if it exists
-                docker stop nginx_container || true
-                docker rm nginx_container || true
+                # Stop and remove existing container to prevent name conflicts
+                docker stop php_container || true
+                docker rm php_container || true
                 
-                # 2. Change the host port from 8080 to 8081 to avoid the 'already allocated' error
-                docker run -d -p 8081:80 --name nginx_container ${IMAGE_NAME}
+                # FIX: Map host port 8081 to container port 80 (to avoid 8080 conflict)
+                docker run -d -p 8081:80 --name php_container ${IMAGE_NAME}
                 '''
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-credentials',
@@ -53,9 +54,10 @@ pipeline {
 
     post {
         success {
-            echo "Deployment Successful! Access at http://your-server-ip:8080"
+            echo "Successfully deployed! Access your PHP app at http://<your-server-ip>:8081"
         }
         always {
+            // Clean up the login session
             sh 'docker logout'
         }
     }
