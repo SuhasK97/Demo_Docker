@@ -2,53 +2,59 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "suhas1997/docker_demo1:latest"
-        // It is safer to define the credential ID here if used multiple times
-        DOCKER_CREDS = credentials('dockerhub-credentials')
+        // Defined here so it's available in all stages
+        IMAGE_NAME = "suhas1997/go_docker_app:latest"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/SuhasK97/Demo_Docker.git'
+                git branch: 'main', url: 'https://github.com/SuhasK97/go-docker-app.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                dir('docker-demo') {
-                    sh 'docker build -t demo_docker .'
-                }
+                sh 'docker build -t go_docker_app .'
             }
         }
 
         stage('Run Docker Container') {
             steps {
-                // Stop and remove existing container to avoid name conflicts
                 sh '''
-                docker stop demo_container || true
-                docker rm demo_container || true
-                docker run -d --name demo_container demo_docker
+                docker stop go_container || true
+                docker rm go_container || true
+                docker run -d -p 8080:8080 --name go_container go_docker_app
                 '''
             }
         }
 
         stage('Tag Docker Image') {
             steps {
-                sh "docker tag demo_docker:latest ${DOCKER_IMAGE}"
+                // Use double quotes so Jenkins can interpolate the ${IMAGE_NAME} variable
+                sh "docker tag go_docker_app:latest ${env.IMAGE_NAME}"
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
-                sh "docker push ${DOCKER_IMAGE}"
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials', 
+                    usernameVariable: 'DOCKER_USER', 
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+                    docker push ${IMAGE_NAME}
+                    '''
+                }
             }
         }
     }
-    
+
     post {
         always {
+            // Clean up login credentials from the runner
             sh 'docker logout'
         }
     }
