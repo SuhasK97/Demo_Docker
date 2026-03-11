@@ -2,14 +2,20 @@ pipeline {
     agent any
 
     environment {
-        // Defined here so it's available in all stages
         IMAGE_NAME = "suhas1997/go_docker_app:latest"
+        // This helper automatically creates DOCKER_HUB_USR and DOCKER_HUB_PSW
+        DOCKER_HUB = credentials('dockerhub-credentials')
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/SuhasK97/go-docker-app.git'
+                // Fixed: The git step expects specific parameters, not a comma-separated list like this
+                git(
+                    branch: 'main', 
+                    credentialsId: 'github-token', 
+                    url: 'https://github.com/SuhasK97/go-docker-app.git'
+                )
             }
         }
 
@@ -24,37 +30,24 @@ pipeline {
                 sh '''
                 docker stop go_container || true
                 docker rm go_container || true
-                docker run -d -p 8080:8080 --name go_container go_docker_app
+                docker run -d --name go_container go_docker_app
                 '''
-            }
-        }
-
-        stage('Tag Docker Image') {
-            steps {
-                // Use double quotes so Jenkins can interpolate the ${IMAGE_NAME} variable
-                sh "docker tag go_docker_app:latest ${env.IMAGE_NAME}"
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-credentials', 
-                    usernameVariable: 'DOCKER_USER', 
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                    echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
-                    docker push ${IMAGE_NAME}
-                    '''
-                }
+                // You MUST login before pushing, or the stage will fail with 'Permission Denied'
+                sh "echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin"
+                sh "docker tag go_docker_app:latest ${IMAGE_NAME}"
+                sh "docker push ${IMAGE_NAME}"
             }
         }
     }
 
     post {
         always {
-            // Clean up login credentials from the runner
+            // Good practice: remove credentials from the Jenkins agent after the run
             sh 'docker logout'
         }
     }
