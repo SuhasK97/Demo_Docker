@@ -1,0 +1,15 @@
+{
+  "name": "node-docker-demo",
+  "version": "1.0.0",
+  "description": "Simple Node.js Docker application",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
