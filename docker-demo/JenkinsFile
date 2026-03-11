@@ -3,15 +3,9 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/SuhasK97/Demo_Docker.git'
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t node-docker-demo:20 ./docker-demo'
+                sh 'docker build -t node-docker-demo:20 docker-demo'
             }
         }
 
