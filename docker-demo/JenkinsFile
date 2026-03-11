@@ -1,27 +1,55 @@
 pipeline {
-    agent any
+agent any
 
-    stages {
+```
+environment {
+    DOCKER_IMAGE = "suhas1997/docker_demo1:latest"
+}
 
-        stage('Checkout Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/SuhasK97/Demo_Docker.git'
-            }
+stages {
+
+    stage('Checkout Code') {
+        steps {
+            git branch: 'main', url: 'https://github.com/SuhasK97/Demo_Docker.git'
         }
-
-        stage('Build Docker Image') {
-            steps {
-                dir('docker-demo') {
-                    sh 'docker build -t demo_docker .'
-                }
-            }
-        }
-
-        stage('Run Docker Container') {
-            steps {
-                sh 'docker run -d --name demo_container demo_docker'
-            }
-        }
-
     }
+
+    stage('Build Docker Image') {
+        steps {
+            dir('docker-demo') {
+                sh 'docker build -t demo_docker .'
+            }
+        }
+    }
+
+    stage('Run Docker Container') {
+        steps {
+            sh 'docker run -d --name demo_container demo_docker || true'
+        }
+    }
+
+    stage('Tag Docker Image') {
+        steps {
+            sh 'docker tag demo_docker:latest $DOCKER_IMAGE'
+        }
+    }
+
+    stage('Push Docker Image') {
+        steps {
+            withCredentials([usernamePassword(
+                credentialsId: 'dockerhub-credentials',
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+            )]) {
+                sh '''
+                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                docker push $DOCKER_IMAGE
+                '''
+            }
+        }
+    }
+
+}
+```
+
 }
