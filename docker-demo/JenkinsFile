@@ -1,16 +1,19 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_NAME = "suhas1997/go_docker_app:latest"
-        // In Jenkins, credentials('id') usually populates _USR and _PSW automatically
-        DOCKER_HUB = credentials('dockerhub-credentials')
-    }
-
     stages {
+        stage('Checkout Code') {
+            steps {
+                // Fixed: The git step parameters must be properly comma-separated or on one line
+                git branch: 'main', url: 'https://github.com/SuhasK97/Demo_Docker.git'
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t go_docker_app .'
+                dir('docker-demo') {
+                    sh 'docker build -t go_docker_app .'
+                }
             }
         }
 
@@ -26,17 +29,24 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                // Using the password-stdin method is correct for security
-                sh "echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin"
-                sh "docker tag go_docker_app:latest ${IMAGE_NAME}"
-                sh "docker push ${IMAGE_NAME}"
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    docker tag go_docker_app suhas1997/go_docker_app:latest
+                    docker push suhas1997/go_docker_app:latest
+                    '''
+                }
             }
         }
-    } // End of stages
+    }
 
     post {
         always {
             sh 'docker logout'
         }
     }
-}
+} // <--- Added missing closing brace for the pipeline block
