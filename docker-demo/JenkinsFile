@@ -8,15 +8,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                // Fixed: The git step expects specific parameters, not a comma-separated list like this
-                git(
-                    branch: 'main', 
-                    credentialsId: 'github-token', 
-                    url: 'https://github.com/SuhasK97/go-docker-app.git'
-                )
-            }
         }
 
         stage('Build Docker Image') {
