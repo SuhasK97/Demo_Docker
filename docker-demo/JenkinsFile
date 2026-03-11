@@ -1,55 +1,55 @@
 pipeline {
-agent any
+    agent any
 
-```
-environment {
-    DOCKER_IMAGE = "suhas1997/docker_demo1:latest"
-}
-
-stages {
-
-    stage('Checkout Code') {
-        steps {
-            git branch: 'main', url: 'https://github.com/SuhasK97/Demo_Docker.git'
-        }
+    environment {
+        DOCKER_IMAGE = "suhas1997/docker_demo1:latest"
+        // It is safer to define the credential ID here if used multiple times
+        DOCKER_CREDS = credentials('dockerhub-credentials')
     }
 
-    stage('Build Docker Image') {
-        steps {
-            dir('docker-demo') {
-                sh 'docker build -t demo_docker .'
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/SuhasK97/Demo_Docker.git'
             }
         }
-    }
 
-    stage('Run Docker Container') {
-        steps {
-            sh 'docker run -d --name demo_container demo_docker || true'
+        stage('Build Docker Image') {
+            steps {
+                dir('docker-demo') {
+                    sh 'docker build -t demo_docker .'
+                }
+            }
         }
-    }
 
-    stage('Tag Docker Image') {
-        steps {
-            sh 'docker tag demo_docker:latest $DOCKER_IMAGE'
-        }
-    }
-
-    stage('Push Docker Image') {
-        steps {
-            withCredentials([usernamePassword(
-                credentialsId: 'dockerhub-credentials',
-                usernameVariable: 'DOCKER_USER',
-                passwordVariable: 'DOCKER_PASS'
-            )]) {
+        stage('Run Docker Container') {
+            steps {
+                // Stop and remove existing container to avoid name conflicts
                 sh '''
-                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                docker push $DOCKER_IMAGE
+                docker stop demo_container || true
+                docker rm demo_container || true
+                docker run -d --name demo_container demo_docker
                 '''
             }
         }
+
+        stage('Tag Docker Image') {
+            steps {
+                sh "docker tag demo_docker:latest ${DOCKER_IMAGE}"
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
+                sh "docker push ${DOCKER_IMAGE}"
+            }
+        }
     }
-
-}
-```
-
+    
+    post {
+        always {
+            sh 'docker logout'
+        }
+    }
 }
