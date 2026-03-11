@@ -1,18 +1,23 @@
 pipeline {
     agent any
 
+    environment {
+        // Updated name to reflect the Nginx app
+        IMAGE_NAME = "suhas1997/nginx_docker_app:latest"
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
-                // Fixed: The git step parameters must be properly comma-separated or on one line
                 git branch: 'main', url: 'https://github.com/SuhasK97/Demo_Docker.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
+                // Adjust 'docker-demo' if your files are in a different subfolder
                 dir('docker-demo') {
-                    sh 'docker build -t go_docker_app .'
+                    sh "docker build -t ${IMAGE_NAME} ."
                 }
             }
         }
@@ -20,9 +25,10 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 sh '''
-                docker stop go_container || true
-                docker rm go_container || true
-                docker run -d --name go_container go_docker_app
+                docker stop nginx_container || true
+                docker rm nginx_container || true
+                # Mapping host port 8080 to container port 80
+                docker run -d -p 8080:80 --name nginx_container ${IMAGE_NAME}
                 '''
             }
         }
@@ -36,8 +42,7 @@ pipeline {
                 )]) {
                     sh '''
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    docker tag go_docker_app suhas1997/go_docker_app:latest
-                    docker push suhas1997/go_docker_app:latest
+                    docker push ${IMAGE_NAME}
                     '''
                 }
             }
@@ -45,8 +50,11 @@ pipeline {
     }
 
     post {
+        success {
+            echo "Deployment Successful! Access at http://your-server-ip:8080"
+        }
         always {
             sh 'docker logout'
         }
     }
-} // <--- Added missing closing brace for the pipeline block
+}
