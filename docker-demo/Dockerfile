@@ -1,5 +1,22 @@
-FROM python:3.10-slim
+# Build stage
+FROM golang:1.20-alpine AS builder
+
 WORKDIR /app
-COPY app.py /app/
-EXPOSE 8000
-CMD ["python", "app.py"]
+
+COPY go.mod .
+RUN go mod download
+
+COPY . .
+
+RUN go build -o app
+
+# Run stage
+FROM alpine:latest
+
+WORKDIR /root/
+
+COPY --from=builder /app/app .
+
+EXPOSE 8080
+
+CMD ["./app"]
