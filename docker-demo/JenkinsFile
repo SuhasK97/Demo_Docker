@@ -17,14 +17,13 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-            steps {
-                script {
-                    // Build the image using the optimized Dockerfile we created
-                    sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
-                    sh "docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest"
-                }
-            }
+    steps {
+        script {
+            // Change directory to where the Dockerfile actually lives
+            sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ./docker-demo" 
         }
+    }
+}
 
         stage('Test') {
             steps {
