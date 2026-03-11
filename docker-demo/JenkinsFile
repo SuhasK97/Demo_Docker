@@ -3,13 +3,11 @@ pipeline {
 
     environment {
         IMAGE_NAME = "suhas1997/go_docker_app:latest"
-        // This helper automatically creates DOCKER_HUB_USR and DOCKER_HUB_PSW
+        // In Jenkins, credentials('id') usually populates _USR and _PSW automatically
         DOCKER_HUB = credentials('dockerhub-credentials')
     }
 
     stages {
-        }
-
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t go_docker_app .'
@@ -28,17 +26,16 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                // You MUST login before pushing, or the stage will fail with 'Permission Denied'
+                // Using the password-stdin method is correct for security
                 sh "echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin"
                 sh "docker tag go_docker_app:latest ${IMAGE_NAME}"
                 sh "docker push ${IMAGE_NAME}"
             }
         }
-    }
+    } // End of stages
 
     post {
         always {
-            // Good practice: remove credentials from the Jenkins agent after the run
             sh 'docker logout'
         }
     }
