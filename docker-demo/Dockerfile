@@ -1,22 +1,15 @@
-# Build stage
-FROM golang:1.20-alpine AS builder
+# Use alpine for a much smaller image size (approx 40MB vs 190MB)
+FROM nginx:alpine
 
-WORKDIR /app
+# Metadata to identify the maintainer
+LABEL maintainer="suhas1997"
 
-COPY go.mod .
-RUN go mod download
+# Copy your HTML file to the default Nginx directory
+# Note: Ensure index.html is in the same folder as this Dockerfile
+COPY index.html /usr/share/nginx/html/index.html
 
-COPY . .
+# Expose port 80 for documentation purposes
+EXPOSE 80
 
-RUN go build -o app
-
-# Run stage
-FROM alpine:latest
-
-WORKDIR /root/
-
-COPY --from=builder /app/app .
-
-EXPOSE 8080
-
-CMD ["./app"]
+# Start Nginx in the foreground (default in the official image)
+CMD ["nginx", "-g", "daemon off;"]
