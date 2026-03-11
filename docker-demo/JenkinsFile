@@ -25,10 +25,12 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 sh '''
+                # 1. Stop and remove the container if it exists
                 docker stop nginx_container || true
                 docker rm nginx_container || true
-                # Mapping host port 8080 to container port 80
-                docker run -d -p 8080:80 --name nginx_container ${IMAGE_NAME}
+                
+                # 2. Change the host port from 8080 to 8081 to avoid the 'already allocated' error
+                docker run -d -p 8081:80 --name nginx_container ${IMAGE_NAME}
                 '''
             }
         }
